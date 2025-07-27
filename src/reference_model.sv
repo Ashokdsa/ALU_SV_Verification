@@ -223,7 +223,7 @@ class alu_reference;
                 begin
                   count3 = 0;
                   count = 0;
-                  trans.res = (temp.opa + 1) * (temp.opb + 1);
+                  trans.res = ((temp.opa + 1) & {`WIDTH{1'b1}}) * ((temp.opb + 1) & {`WIDTH{1'b1}});
                   correct.put(1);
                 end
                 else
@@ -236,7 +236,7 @@ class alu_reference;
                   end
                   if(delay() == 2)
                   begin
-                    trans.res = (temp.opa + 1) * (temp.opb + 1);
+                    trans.res = ((temp.opa + 1) & {`WIDTH{1'b1}}) * ((temp.opb + 1) & {`WIDTH{1'b1}});
                     trans.err = 1'bz;
                     count3++;
                     count = 0;
@@ -263,7 +263,7 @@ class alu_reference;
                   correct.put(1);
                   count3 = 0;
                   count = 0;
-                  trans.res = (temp.opa << 1) * (temp.opb);
+                  trans.res = ((temp.opa << 1) & {`WIDTH{1'b1}}) * (temp.opb);
                 end
                 else
                 begin
@@ -277,7 +277,7 @@ class alu_reference;
                   end
                   if(delay() == 2)
                   begin
-                    trans.res = (temp.opa << 1) * (temp.opb);
+                    trans.res = ((temp.opa << 1) & {`WIDTH{1'b1}}) * (temp.opb);
                     trans.err = 1'bz;
                     count3++;
                     count = 0;

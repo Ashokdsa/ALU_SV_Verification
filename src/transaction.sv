@@ -45,6 +45,11 @@ class base_transaction; //proper working without multiplication
       cmd inside {[0:13]};
   }
 
+  constraint opa_opb_val{
+    if(mode && cmd == 8) 
+      (opa < opb) dist{0:=1,1:=1,2:=1};
+  }
+
   virtual function base_transaction copy();
     copy = new();
     copy.rst = rst;
@@ -107,6 +112,7 @@ class crn_transaction extends base_transaction; //most erroneous transaction rel
         inp_valid == 2'b00;
     }
   }
+
   virtual function base_transaction copy();
     crn_transaction copy2;
     copy2 = new();
@@ -119,6 +125,51 @@ class crn_transaction extends base_transaction; //most erroneous transaction rel
     copy2.opb = opb;
     copy2.cin = cin;
     return copy2;
+  endfunction
+endclass
+
+class crn_transaction2 extends base_transaction; //exceptional cases
+  int count3;
+  int i;
+  constraint cmd_val
+  {
+    if(mode) 
+      cmd inside {1,3,[4:7]}; 
+    else 
+      cmd inside {9,11};
+  }
+
+  constraint opa_opb_val{
+    if(mode)
+    {
+      if(cmd == 1 || cmd == 3)
+        opa < opb;
+      else if(cmd == 4 || cmd == 6)
+        opa == 8'b11111111 && opb == 8'b11111111;
+      else
+        opa == 8'b00000000 && opb == 8'b00000000;
+    }
+    else
+    {
+      if(cmd == 9)
+        opa == 8'b11111111 || opb == 8'b11111111;
+      else
+        opa == 8'b10000000;
+    }
+  }
+
+  virtual function base_transaction copy();
+    crn_transaction2 copy6;
+    copy6 = new();
+    copy6.rst = rst;
+    copy6.inp_valid = inp_valid;
+    copy6.mode = mode;
+    copy6.cmd = cmd;
+    copy6.ce = ce;
+    copy6.opa = opa;
+    copy6.opb = opb;
+    copy6.cin = cin;
+    return copy6;
   endfunction
 endclass
 
@@ -252,7 +303,6 @@ class flag_transaction extends base_transaction; //Trigger COUT and OFLOW
   endfunction
 endclass
 
-//FOR MULTIPLICATION TRANSACTION REMAINING
 class mult_transaction extends base_transaction;
   int count3;
 
@@ -273,6 +323,30 @@ class mult_transaction extends base_transaction;
 
   virtual function base_transaction copy();
     mult_transaction copy5;
+    copy5 = new();
+    copy5.rst = rst;
+    copy5.inp_valid = inp_valid;
+    copy5.mode = mode;
+    copy5.cmd = cmd;
+    copy5.ce = ce;
+    copy5.opa = opa;
+    copy5.opb = opb;
+    copy5.cin = cin;
+    return copy5;
+  endfunction
+endclass
+
+class mult_crn_transaction extends mult_transaction;
+  constraint opa_opb_val
+  {
+    if(cmd == 9)
+      opa == 8'b11111111 || opb == 8'b11111111;
+    else
+      opa == 8'b10000000;
+  }
+
+  virtual function base_transaction copy();
+    mult_crn_transaction copy5;
     copy5 = new();
     copy5.rst = rst;
     copy5.inp_valid = inp_valid;

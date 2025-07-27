@@ -20,14 +20,19 @@ module top;
   //delay_test tb = new(intf);
   //flag_test tb = new(intf);
   //mult_test tb = new(intf);
+  //mult_crn_test tb = new(intf);
+  //corner2_test tb = new(intf);
+  //same_test tb = new(intf);
   reg_test reg_tb = new(intf);
   
   initial begin //initialize the reset
+    ASSERT.cg.stop;
     @(negedge clk);
     intf.rst = 1;
     @(negedge clk);
     intf.rst = 0;
     repeat(2)@(posedge clk);
+    ASSERT.cg.start;
     //tb.start();
     reg_tb.start();
     $finish;

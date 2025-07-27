@@ -36,16 +36,16 @@ module alu_assertion_cvg(clk,rst,ce,opa,opb,mode,inp_valid,cmd,cin,res);
   property ALU_clk_delay;
     @(posedge clk)
     if(mode)
-      (cmd inside {ADD,SUB,ADD_CIN,SUB_CIN}) throughout delay_16 
+      cmd inside {ADD,SUB,ADD_CIN,SUB_CIN} |-> (cmd inside {ADD,SUB,ADD_CIN,SUB_CIN}) throughout delay_16 
     else
-      (cmd inside {AND,NAND,OR,NOR,XOR,XNOR,ROL_A_B,ROR_A_B}) throughout delay_16;
+      cmd inside {AND,NAND,OR,NOR,XOR,XNOR,ROL_A_B,ROR_A_B} |-> (cmd inside {AND,NAND,OR,NOR,XOR,XNOR,ROL_A_B,ROR_A_B}) throughout delay_16;
   endproperty
 
   ALU_CLK: assert property(ALU_clk_delay) else $error("INPUTS HAVEN'T BEEN RECIEVED ON TIME");
 
   property ALU_clk_mult;
     @(posedge clk)
-    (cmd == SH_MUL throughout (delay_16 ##3 1)) or (cmd == ADD_MUL throughout (delay_16 ##3 1));
+    cmd == SH_MUL |-> (cmd == SH_MUL throughout (delay_16 ##3 1)) or (cmd == ADD_MUL throughout (delay_16 ##3 1));
   endproperty
   ALU_CLK_MULT: assert property(ALU_clk_mult) else $error("MULTIPLICATION FAILED");
 

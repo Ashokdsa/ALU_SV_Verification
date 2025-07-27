@@ -124,6 +124,48 @@ class mult_test extends test;
   endtask
 endclass
 
+class mult_crn_test extends mult_test;
+  mult_crn_transaction trans;
+
+  function new(virtual alu_intf vif);
+    super.new(vif);
+    trans = new();
+  endfunction
+
+  task start();
+    env = new(vif);
+    env.build();
+    env.gen.trans = trans;
+    $display("---------------------------------------------MULTIPLICATION CORNER TEST START------------------------------------------------");
+    begin
+      env.start(9);
+    end
+    $display("---------------------------------------------MULTIPLICATION CORNER TEST DONE-------------------------------------------------");
+    i = i + env.scr.i;
+  endtask
+endclass
+
+class corner2_test extends test;
+  crn_transaction2 trans;
+
+  function new(virtual alu_intf vif);
+    super.new(vif);
+    trans = new();
+  endfunction
+
+  task start();
+    env = new(vif);
+    env.build();
+    env.gen.trans = trans;
+    $display("---------------------------------------------CORNER TEST 2 START------------------------------------------------");
+    begin
+      env.start(30);
+    end
+    $display("---------------------------------------------CORNER TEST 2 DONE-------------------------------------------------");
+    i = i + env.scr.i;
+  endtask
+endclass
+
 class reg_test extends test;
 
 glo_transaction globe; //allows reset and clock enable to be random
@@ -131,7 +173,8 @@ crn_transaction corner; //most erroneous transaction related to out of range and
 time_transaction tim;
 flag_transaction flag; //Trigger COUT and OFLOW
 mult_transaction mult; //Only Multiplication
-
+crn_transaction2 crn2;
+mult_crn_transaction mult_crn; //Only Multiplication
 
   function new(virtual alu_intf vif);
     super.new(vif);
@@ -140,6 +183,8 @@ mult_transaction mult; //Only Multiplication
     tim = new();
     flag = new(); //Trigger COUT and OFLOW
     mult = new(); //Only Multiplication
+    crn2 = new(); //checks for max and min values
+    mult_crn = new();
   endfunction
 
   task start();
@@ -181,6 +226,36 @@ mult_transaction mult; //Only Multiplication
       env.start(30);
     end
     $display("---------------------------------------------MULTIPLICATION TEST DONE-------------------------------------------------");
+    $display("---------------------------------------------CORNER TEST 2 START------------------------------------------------");
+    begin
+      env.gen.trans = crn2;
+      env.start(30);
+    end
+    $display("---------------------------------------------CORNER TEST 2 DONE-------------------------------------------------");
+    $display("---------------------------------------------MUTLIPLICATION CORNER TEST START------------------------------------------------");
+    begin
+      env.gen.trans = mult_crn;
+      env.start(9);
+    end
+    $display("---------------------------------------------MULTIPLICATION CORNER TEST DONE-------------------------------------------------");
     i = i + env.scr.i;
+  endtask
+endclass
+
+class same_test extends test;
+  same_environment env_same;
+  function new(virtual alu_intf vif);
+    super.new(vif);
+  endfunction
+
+  task start();
+    env_same = new(vif);
+    env_same.build();
+    $display("--------------------------------------------SAME TEST START------------------------------------------------");
+    begin
+      env_same.start(4);
+    end
+    $display("---------------------------------------------SAME TEST DONE-------------------------------------------------");
+    i = i + env_same.scr.i;
   endtask
 endclass
