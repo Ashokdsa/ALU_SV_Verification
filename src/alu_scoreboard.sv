@@ -24,13 +24,13 @@ class alu_scoreboard;
           dut = 0;
           mbx_mon_scr.get(dut_trans);
           dut = 1;
-          $display("%0t | SCO: RECIEVED DUT OUTPUT %0b",$time,cmp);
+          $display("%0t | SCO: RECIEVED DUT OUTPUT %0b",$time/10 - 1,cmp);
         end:DUT_OUTPUT
         begin:REF_OUTPUT
           cmp = 0;
           mbx_ref_scr.get(ref_trans);
           cmp = 1;
-          $display("%0t | SCO: RECIEVED REF OUTPUT,%0b",$time,cmp);
+          $display("%0t | SCO: RECIEVED REF OUTPUT,%0b",$time/10 - 1,cmp);
         end:REF_OUTPUT
       join_any
       #2;

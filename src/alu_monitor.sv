@@ -77,22 +77,18 @@ class alu_monitor;
       count3 = (previ == {vif.mon_cb.mode,vif.mon_cb.cmd}) ? count3 : 0;
       previ = {vif.mon_cb.mode,vif.mon_cb.cmd};
       end
-      $display("%0t | MON: FLAG = %0b VALID_A = %0b VALID_B = %0b",$time/10 - 1,flag,valid_a,valid_b);
       count = vif.mon_cb.rst ? 0 : count;
       if(vif.mon_cb.rst)begin
         repeat(2)@(vif.mon_cb);
-        $display("ENTERS RESET");
       end
       else if(flag && (count3 > 0)) begin
         repeat(2)@(vif.mon_cb);
         count3++;
         if(count3 >= 4)
           count3 = 0;
-        $display("%0t | MON: ENTERED MULTIPLICATION COUNT = %0d",$time/10 - 1,count3);
       end
       else if(flag == 0)
       begin
-        $display("%0t | MON: FLAG ZERO GAVE ONE DELAY",$time/10 - 1);
         count = 0;
         repeat(1)@(vif.mon_cb);
       end
@@ -100,7 +96,6 @@ class alu_monitor;
         flag = 0;
         valid_a = 0;
         valid_b = 0;
-        $display("%0t | MON: BOTH VALID COUNT = %0d",$time/10 - 1,count);
         repeat(1)@(vif.mon_cb);
         if(vif.mon_cb.mode && (vif.mon_cb.cmd == ADD_MUL|| vif.mon_cb.cmd == SH_MUL))
         begin
@@ -112,14 +107,12 @@ class alu_monitor;
       else if(count < 16 && flag)
       begin
         count++;
-        $display("%0t | MON: COUNTING = %0d",$time/10 - 1,count);
       end
       else if(count >= 16) begin
         valid_a = 0;
         valid_b = 0;
         count = 0;
         flag = 0;
-        $display("%0t | MON: COUNT EXCEEDED",$time/10 - 1);
       end
       trans.err = vif.mon_cb.err;
       trans.res = vif.mon_cb.res;

@@ -270,21 +270,3 @@ mult_crn_transaction mult_crn; //Only Multiplication
     i = i + env.scr.i;
   endtask
 endclass
-
-class same_test extends test;
-  same_environment env_same;
-  function new(virtual alu_intf vif);
-    super.new(vif);
-  endfunction
-
-  task start();
-    env_same = new(vif);
-    env_same.build();
-    $display("--------------------------------------------SAME TEST START------------------------------------------------");
-    begin
-      env_same.start(4);
-    end
-    $display("---------------------------------------------SAME TEST DONE-------------------------------------------------");
-    i = i + env_same.scr.i;
-  endtask
-endclass

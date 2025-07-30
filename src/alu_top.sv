@@ -1,7 +1,7 @@
-`include "package.sv"
-`include "interface.sv"
+`include "alu_package.sv"
+`include "alu_interface.sv"
 `include "ALU_Design_16clock_cycles.v"
-`include "assertion_cvg.sv"
+`include "alu_assertion_cvg.sv"
 module top;
   import alu_pkg::*;
   bit clk;

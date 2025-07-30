@@ -11,13 +11,13 @@ all:
 
 main:
 	make clean
-	vlog -sv +acc +cover +fcover -l alu.log top.sv
+	vlog -sv +acc +cover +fcover -l alu.log alu_top.sv
 	make clear
 	vsim -vopt work.top -voptargs=+acc=npr -assertdebug -l simulation.log -coverage -c -do "coverage save -onexit -assert -directive -cvg -codeAll alu_coverage.ucdb; run -all; exit"
 	vcover report -html alu_coverage.ucdb -htmldir covReport -details
 
 compile:
-	vlog -sv top.sv
+	vlog -sv alu_top.sv
 
 simulate:
 	vsim -c top -do "run -all;exit"
