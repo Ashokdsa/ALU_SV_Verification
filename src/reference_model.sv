@@ -49,12 +49,13 @@ class alu_reference;
         trans.l = 1'bz;
         trans.e = 1'bz;
         trans.oflow = 1'bz;
+        {valid_a,valid_b} = 2'b00;
         correct.put(1);
       end
       else begin
         if(trans.ce) begin
-          count = (temp.cmd == trans.cmd) || (temp.mode == trans.mode) ? count : 0;
-          count3 = (temp.cmd == trans.cmd) || (temp.mode == trans.mode) ? count3 : 0;
+          count = (temp.cmd == trans.cmd) && (temp.mode == trans.mode) ? count : 0;
+          count3 = (temp.cmd == trans.cmd) && (temp.mode == trans.mode) ? count3 : 0;
           temp.cmd = trans.cmd;
           temp.mode = trans.mode;
           trans.res = valid_a && valid_b ? temp.res : 'bz;
@@ -196,9 +197,9 @@ class alu_reference;
                 begin
                   trans.res = 'bz;
                   trans.err = 1'bz;
-                  trans.g = temp.opa > temp.opb;
-                  trans.l = temp.opa < temp.opb;
-                  trans.e = temp.opa == temp.opb;
+                  trans.g = temp.opa > temp.opb ? 1'b1 : 1'bz;
+                  trans.l = temp.opa < temp.opb ? 1'b1 : 1'bz;
+                  trans.e = temp.opa == temp.opb ? 1'b1 : 1'bz;
                   correct.put(1);
                 end
                 else if(delay() == 0)
@@ -217,7 +218,7 @@ class alu_reference;
                 if(count3 > 0 &&  count3 < 3)
                 begin
                   count3++;
-                  $display("COUNT = %0d",count3);
+                  //$display("COUNT = %0d",count3);
                 end
                 else if(count3 >= 3)
                 begin
@@ -256,7 +257,7 @@ class alu_reference;
                 if(count3 > 0 && count3 < 3)
                 begin
                   count3++;
-                  $display("COUNT = %0d",count3);
+                  //$display("COUNT = %0d",count3);
                 end
                 else if(count3 >= 3)
                 begin
@@ -453,13 +454,13 @@ class alu_reference;
               end
               4'd9: // SHL1_A
               begin
-                trans.res = trans.inp_valid[0] == 1'b1 ? (trans.opa << 1) : 'bz;
+                trans.res = trans.inp_valid[0] == 1'b1 ? (temp.opa << 1) : 'bz;
                 trans.err = trans.inp_valid[0] == 1'b1 ? 1'bz : 1'b1;
                 correct.put(1);
               end
               4'd10: // SHR1_B
               begin
-                trans.res = trans.inp_valid[1] == 1'b1 ? (trans.opb >> 1) : 'bz;
+                trans.res = trans.inp_valid[1] == 1'b1 ? (temp.opb >> 1) : 'bz;
                 trans.err = trans.inp_valid[1] == 1'b1 ? 1'bz : 1'b1;
                 correct.put(1);
               end
@@ -477,7 +478,7 @@ class alu_reference;
                   valid_a = trans.inp_valid[0] == 1'b1 ? 1 : valid_a;
                   valid_b = trans.inp_valid[1] == 1'b1 ? 1 : valid_b;
                 end
-                shft = valid_b ? temp.opb[`LOG2 - 1 : 0] : 'bz;
+                shft = valid_b ? temp.opb[`LOG2 - 1 : 0] : 'b0;
                 if(delay() == 2)
                 begin
                   trans.res = {1'b0,temp.opa << shft | temp.opa >> (`WIDTH - shft)};
@@ -499,7 +500,7 @@ class alu_reference;
                   valid_a = trans.inp_valid[0] == 1'b1 ? 1 : valid_a;
                   valid_b = trans.inp_valid[1] == 1'b1 ? 1 : valid_b;
                 end
-                shft = valid_b ? temp.opb[`LOG2 - 1 : 0] : 'bz;
+                shft = valid_b ? temp.opb[`LOG2 - 1 : 0] : 'b0;
                 if(delay() == 2)
                 begin
                   trans.res = {1'b0,(temp.opa >> shft | temp.opa << (`WIDTH - shft))};
@@ -535,18 +536,22 @@ class alu_reference;
           trans.l = temp.l;
           trans.e = temp.e;
           trans.oflow = temp.oflow;
+          //valid_a = valid_a;
+          //valid_b = valid_b;
           correct.put(1);
         end
       end
+      //@(vif.ref_cb);
       if(correct.try_get(1))
       begin
         mbx_ref_scr.put(trans);
         iter++;
-        $display("%0t | REF: ITERATION: %0d",($time/10)-2,iter);
+        $display("%0t | REF: ITERATION: %0d",$time/10 - 1,iter);
         if(trans.mode)
           $display("CMD = %0s OPA = %0d OPB = %0d CIN = %0b\nRES = %0d ERR = %0b COUT = %0b OFLOW = %0b G,L,E = %3b",arith'(trans.cmd),temp.opa,temp.opb,trans.cin,trans.res,trans.err,trans.cout,trans.oflow,{trans.g,trans.l,trans.e});
         else
-          $display("CMD = %0s\nOPA = %b\nOPB = %0b\nOUTPUT:\nRES = %b ERR = %0b COUT = %0b OFLOW = %0b G,L,E = %3b",logical'(trans.cmd),trans.opa,trans.opb,trans.res,trans.err,trans.cout,trans.oflow,{trans.g,trans.l,trans.e});
+          $display("CMD = %0s\nOPA = %b\nOPB = %b\nOUTPUT:\nRES = %b ERR = %0b COUT = %0b OFLOW = %0b G,L,E = %3b",logical'(trans.cmd),trans.opa,trans.opb,trans.res,trans.err,trans.cout,trans.oflow,{trans.g,trans.l,trans.e});
+        correct.put(1);
       end
       temp.res = trans.res;
       temp.err = trans.err;
@@ -555,7 +560,6 @@ class alu_reference;
       temp.l = trans.l;
       temp.e = trans.e;
       temp.oflow = trans.oflow;
-      @(vif.ref_cb);
     end
   endtask
 
@@ -565,7 +569,7 @@ class alu_reference;
       count = 0;
       return 0;
     end
-    if(count >= 14)
+    if(count >= 16)
     begin
       count = 0;
       if(valid_a && valid_b)
@@ -573,18 +577,16 @@ class alu_reference;
       else
         return 0;//time passed trigger err
     end
-    else if(count < 15)
+    else if(count < 16)
     begin
       if(valid_a && valid_b)
       begin
         count = 0;
         return 2;//value is true return key
       end
-      else
-      begin
-        count++;
-        return 1;//time is calculated
-      end
     end
+    count++;
+    //$display("%0t | REF: COUNTING = %0d",$time/10 - 1,count);
+    return 1;//time is calculated
   endfunction
 endclass

@@ -5,8 +5,8 @@
 class base_transaction; //proper working without multiplication
   rand logic rst;
   rand logic[1:0] inp_valid;
-  randc logic mode;
-  randc logic [`CWIDTH - 1:0] cmd;
+  rand logic mode;
+  rand logic [`CWIDTH - 1:0] cmd;
   rand logic ce;
   rand logic [(`WIDTH-1):0]opa,opb;
   rand logic cin;
@@ -15,6 +15,8 @@ class base_transaction; //proper working without multiplication
   logic cout;
   logic g,l,e;
   logic oflow;
+  bit [`CWIDTH + 1:0]previ[$];
+
   constraint rst_val{rst == 0;ce == 1;}
   constraint inp_val
   {
@@ -45,10 +47,21 @@ class base_transaction; //proper working without multiplication
       cmd inside {[0:13]};
   }
 
+  constraint uniqueness{foreach(previ[i]) {mode,cmd} != previ[i];}
+
   constraint opa_opb_val{
     if(mode && cmd == 8) 
       (opa < opb) dist{0:=1,1:=1,2:=1};
   }
+
+  function void post_randomize();
+    previ.push_back({mode,cmd});
+    if(previ.size >= 23)
+    begin
+      for(int j = 0; j < previ.size; j++)
+        void'(previ.pop_front);
+    end
+  endfunction
 
   virtual function base_transaction copy();
     copy = new();
@@ -66,7 +79,7 @@ endclass
 
 class glo_transaction extends base_transaction; //allows reset and clock enable to be random
 
-  constraint rst_val{rst inside {0,1};ce inside {0,1};}
+  //constraint rst_val{rst inside {0,1};ce inside {0,1};}
   
   virtual function base_transaction copy();
     glo_transaction copy1;
@@ -79,6 +92,7 @@ class glo_transaction extends base_transaction; //allows reset and clock enable 
     copy1.opa = opa;
     copy1.opb = opb;
     copy1.cin = cin;
+    rst_val.constraint_mode(0);
     return copy1;
   endfunction
 endclass
@@ -96,22 +110,31 @@ class crn_transaction extends base_transaction; //most erroneous transaction rel
     if(mode)
     {
       if(cmd == 4 || cmd == 5)
-        inp_valid != 2'b01;
+        inp_valid == 2'b10 ;
       else if(cmd == 6 || cmd == 7)
-        inp_valid != 2'b10;
+        inp_valid == 2'b01;
       else
         inp_valid == 2'b00;
     }
     else
     {
       if(cmd == 6 || cmd == 8 || cmd == 9)
-        inp_valid != 2'b01;
+        inp_valid == 2'b10;
       else if(cmd == 7 || cmd == 10 || cmd == 11)
-        inp_valid != 2'b10;
+        inp_valid == 2'b01;
       else
         inp_valid == 2'b00;
     }
   }
+
+  function void post_randomize();
+    previ.push_back({mode,cmd});
+    if(previ.size >= 32)
+    begin
+      for(int j = 0; j < previ.size; j++)
+        void'(previ.pop_back);
+    end
+  endfunction
 
   virtual function base_transaction copy();
     crn_transaction copy2;
@@ -158,6 +181,15 @@ class crn_transaction2 extends base_transaction; //exceptional cases
     }
   }
 
+  function void post_randomize();
+    previ.push_back({mode,cmd});
+    if(previ.size >= 8)
+    begin
+      for(int j = 0; j < previ.size; j++)
+        void'(previ.pop_back);
+    end
+  endfunction
+
   virtual function base_transaction copy();
     crn_transaction2 copy6;
     copy6 = new();
@@ -176,10 +208,12 @@ endclass
 class time_transaction extends base_transaction;
   rand int count;
   int count3;
+  rand int c_valid;
   int i;
   bit valid_a,valid_b;
 
-  constraint count_val{count inside {[11:16]};}
+  constraint count_val{count inside {[0:16]};}
+  constraint valid_count{solve count before c_valid;c_valid < count; c_valid >= 0;}
   constraint inp_val{inp_valid inside {[2'b01:2'b11]};}
   constraint cmd_val{
     if(mode)
@@ -187,6 +221,10 @@ class time_transaction extends base_transaction;
     else
       cmd inside {[0:5],12,13};
   }
+
+  function void pre_randomize();
+    uniqueness.constraint_mode(0);
+  endfunction
 
   function void post_randomize();
     valid_a = inp_valid[0] ? 1'b1 : valid_a;
@@ -198,6 +236,120 @@ class time_transaction extends base_transaction;
       count.rand_mode(1);
       cmd.rand_mode(1);
       mode.rand_mode(1);
+      inp_valid.rand_mode(1); 
+      c_valid.rand_mode(1);
+    end
+    else if({valid_a,valid_b} == 2'b11)
+    begin
+      if(mode && (cmd == 9 || cmd == 10))
+      begin
+        count.rand_mode(0);
+        cmd.rand_mode(0);
+        mode.rand_mode(0);
+        inp_valid.rand_mode(0); //extra
+        c_valid.rand_mode(0);
+        if(count3 >= 3)begin
+          count3 = 0;
+          count.rand_mode(1);
+          cmd.rand_mode(1);
+          mode.rand_mode(1);
+          inp_valid.rand_mode(1); //extra
+          c_valid.rand_mode(1);
+          valid_a = 1'b0;
+          valid_b = 1'b0;
+          i = 0;
+        end
+        else
+          count3++;
+      end
+      else begin
+        count.rand_mode(1);
+        cmd.rand_mode(1);
+        mode.rand_mode(1);
+        inp_valid.rand_mode(1); //extra
+        c_valid.rand_mode(1);
+        valid_a = 1'b0;
+        valid_b = 1'b0;
+        i = 0;
+      end
+    end
+    else if(i == 0) begin
+      $display("DELAY = %0d",count);
+      count.rand_mode(0);
+      cmd.rand_mode(0);
+      mode.rand_mode(0);
+      inp_valid.rand_mode(0); //extra
+      c_valid.rand_mode(0);
+      i++;
+    end
+    else if(i < count) 
+    begin
+      count.rand_mode(0);
+      cmd.rand_mode(0);
+      mode.rand_mode(0);
+      c_valid.rand_mode(0);
+      if(i >= c_valid) 
+        inp_valid.rand_mode(1); //extra
+      else
+        inp_valid.rand_mode(0); //extra
+      i++;
+    end
+    else if(i >= count)
+    begin
+      i = 0;
+      count.rand_mode(1);
+      cmd.rand_mode(1);
+      mode.rand_mode(1);
+      inp_valid.rand_mode(1); //extra
+      c_valid.rand_mode(0);
+      valid_a = 1'b0;
+      valid_b = 1'b0;
+    end
+  endfunction
+
+  virtual function base_transaction copy();
+    time_transaction copy3;
+    copy3 = new();
+    copy3.rst = rst;
+    copy3.inp_valid = inp_valid;
+    copy3.mode = mode;
+    copy3.cmd = cmd;
+    copy3.cin = cin;
+    copy3.ce = ce;
+    copy3.opa = opa;
+    copy3.opb = opb;
+    return copy3;
+  endfunction
+endclass
+
+class w_time_transaction extends base_transaction;
+  rand int count;
+  int count3;
+  int i;
+  bit valid_a,valid_b;
+  constraint count_val{count == 17;}
+  constraint inp_val{inp_valid inside {[2'b01:2'b10]};}
+  constraint cmd_val{
+    if(mode)
+      cmd inside {[0:3],[8:10]};
+    else
+      cmd inside {[0:5],12,13};
+  }
+
+  function void pre_randomize();
+    uniqueness.constraint_mode(0);
+  endfunction
+  function void post_randomize();
+    valid_a = inp_valid[0] ? 1'b1 : valid_a;
+    valid_b = inp_valid[1] ? 1'b1 : valid_b;
+
+    if({valid_a,valid_b} == 2'b00)
+    begin
+      i = 0;
+      count.rand_mode(1);
+      cmd.rand_mode(1);
+      mode.rand_mode(1);
+      inp_valid.rand_mode(1); //extra
     end
     else if({valid_a,valid_b} == 2'b11)
     begin
@@ -207,6 +359,7 @@ class time_transaction extends base_transaction;
         count.rand_mode(0);
         cmd.rand_mode(0);
         mode.rand_mode(0);
+        inp_valid.rand_mode(0); //extra
         if(count3 >= 3)begin
           count3 = 0;
           count.rand_mode(1);
@@ -222,6 +375,7 @@ class time_transaction extends base_transaction;
         count.rand_mode(1);
         cmd.rand_mode(1);
         mode.rand_mode(1);
+        inp_valid.rand_mode(1); //extra
         valid_a = 1'b0;
         valid_b = 1'b0;
       end
@@ -231,6 +385,7 @@ class time_transaction extends base_transaction;
       count.rand_mode(0);
       cmd.rand_mode(0);
       mode.rand_mode(0);
+      inp_valid.rand_mode(0); //extra
       i++;
     end
     else if(i < count) 
@@ -238,6 +393,7 @@ class time_transaction extends base_transaction;
       count.rand_mode(0);
       cmd.rand_mode(0);
       mode.rand_mode(0);
+      inp_valid.rand_mode(0); //extra
       i++;
     end
     else if(i >= count)
@@ -246,13 +402,14 @@ class time_transaction extends base_transaction;
       count.rand_mode(1);
       cmd.rand_mode(1);
       mode.rand_mode(1);
+      inp_valid.rand_mode(1); //extra
       valid_a = 1'b0;
       valid_b = 1'b0;
     end
   endfunction
 
   virtual function base_transaction copy();
-    time_transaction copy3;
+    w_time_transaction copy3;
     copy3 = new();
     copy3.rst = rst;
     copy3.inp_valid = inp_valid;
@@ -280,14 +437,26 @@ class flag_transaction extends base_transaction; //Trigger COUT and OFLOW
     {
       if(mode)
       {
-        if(cmd == 0 || cmd == 2)
+        if(cmd == 0)
           opa + opb >= 9'b100000000;
+        else if(cmd == 2)
+          opa + cin >= 9'b100000000;
         else if(cmd == 1 || cmd == 3)
           opa < opb;
       }
       else
-        opb > 3'b111;
+        opb > 4'b1111;
     }
+
+  function void post_randomize();
+    previ.push_back({mode,cmd});
+    if(previ.size >= 7)
+    begin
+      for(int j = 0; j < previ.size; j++)
+        void'(previ.pop_front);
+    end
+  endfunction
+
   virtual function base_transaction copy();
     flag_transaction copy4;
     copy4 = new();

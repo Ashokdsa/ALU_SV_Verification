@@ -11,7 +11,7 @@ class test;
     env.build();
     $display("---------------------------------------------NORMAL TEST START------------------------------------------------");
     begin
-      env.start(32);
+      env.start(46); // 32
     end
     $display("---------------------------------------------NORMAL TEST DONE-------------------------------------------------");
     i = i + env.scr.i;
@@ -54,7 +54,7 @@ class corner_test extends test;
     env.gen.trans = trans;
     $display("---------------------------------------------CORNER TEST START------------------------------------------------");
     begin
-      env.start(32);
+      env.start(15);
     end
     $display("---------------------------------------------CORNER TEST DONE-------------------------------------------------");
     i = i + env.scr.i;
@@ -75,9 +75,30 @@ class delay_test extends test;
     env.gen.trans = trans;
     $display("---------------------------------------------DELAY TEST START------------------------------------------------");
     begin
-      env.start(15);
+      env.start(32);
     end
     $display("---------------------------------------------DELAY TEST DONE-------------------------------------------------");
+    i = i + env.scr.i;
+  endtask
+endclass
+
+class w_delay_test extends test;
+  w_time_transaction trans;
+  
+  function new(virtual alu_intf vif);
+    super.new(vif);
+    trans = new();
+  endfunction
+
+  task start();
+    env = new(vif);
+    env.build();
+    env.gen.trans = trans;
+    $display("---------------------------------------------WRONG DELAY TEST START------------------------------------------------");
+    begin
+      env.start(50);
+    end
+    $display("---------------------------------------------WRONG DELAY TEST DONE-------------------------------------------------");
     i = i + env.scr.i;
   endtask
 endclass
@@ -171,6 +192,7 @@ class reg_test extends test;
 glo_transaction globe; //allows reset and clock enable to be random
 crn_transaction corner; //most erroneous transaction related to out of range and wrong inp_valid
 time_transaction tim;
+w_time_transaction del;
 flag_transaction flag; //Trigger COUT and OFLOW
 mult_transaction mult; //Only Multiplication
 crn_transaction2 crn2;
@@ -185,6 +207,7 @@ mult_crn_transaction mult_crn; //Only Multiplication
     mult = new(); //Only Multiplication
     crn2 = new(); //checks for max and min values
     mult_crn = new();
+    del = new();
   endfunction
 
   task start();
@@ -205,15 +228,21 @@ mult_crn_transaction mult_crn; //Only Multiplication
     $display("---------------------------------------------CORNER TEST START------------------------------------------------");
     begin
       env.gen.trans = corner;
-      env.start(32);
+      env.start(15);
     end
     $display("---------------------------------------------CORNER TEST DONE-------------------------------------------------");
     $display("---------------------------------------------DELAY TEST START------------------------------------------------");
     begin
       env.gen.trans = tim;
-      env.start(60);
+      env.start(32);
     end
     $display("---------------------------------------------DELAY TEST DONE-------------------------------------------------");
+    $display("---------------------------------------------WRONG DELAY TEST START------------------------------------------------");
+    begin
+      env.gen.trans = del;
+      env.start(50);
+    end
+    $display("---------------------------------------------WRONG DELAY TEST DONE-------------------------------------------------");
     $display("---------------------------------------------FLAG TEST START------------------------------------------------");
     begin
       env.gen.trans = flag;
