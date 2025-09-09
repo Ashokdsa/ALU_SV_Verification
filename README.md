@@ -6,4 +6,4 @@ Link to ALU DOCUMENT \
 \
 ![ALU TESTBENCH](<Test Bench Architecture/Test_Bench_Architecture_ALU_with_BG.png>)
 ----------
-#### Done by Ashok D'Sa 6070
+#### Done by Ashok D'Sa
